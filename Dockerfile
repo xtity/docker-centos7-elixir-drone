@@ -20,8 +20,6 @@ ENV LC_ALL en_US.UTF-8
 # Set app env
 ENV HOME /root
 ENV ELIXIR_VERSION 1.0.3
-#ENV PHOENIX_APP_NAME sample
-#ENV PHOENIX_APP_PORT 4000
 ENV DRONE_PORT 80
 ########## ENV ##########
 
@@ -34,6 +32,8 @@ RUN yum install -y epel-release && yum clean all
 RUN yum install -y http://packages.erlang-solutions.com/site/esl/esl-erlang/FLAVOUR_3_general/esl-erlang_17.4-1~centos~7_amd64.rpm && yum clean all 
 RUN yum install -y wget && yum clean all 
 RUN yum install -y git && yum clean all 
+RUN yum install -y nodejs
+RUN yum install -y npm 
 ########## MIDDLEWARE ##########
 
 ########## DRONE.IO ##########
@@ -42,44 +42,22 @@ RUN yum localinstall -y drone.rpm
 ########## DRONE.IO ##########
 
 ########## ELIXIR ##########
+# Build Elixir
 RUN git clone https://github.com/elixir-lang/elixir.git
 WORKDIR /usr/local/src/elixir
+RUN git checkout refs/tags/v${ELIXIR_VERSION}
+RUN make clean install
+
+# Build Dialyxir
+WORKDIR /usr/local/src
+RUN git clone https://github.com/jeremyjh/dialyxir.git
+WORKDIR /usr/local/src/dialyxir
 RUN git checkout refs/tags/v${ELIXIR_VERSION}
 RUN make clean install
 ########## ELIXIR ##########
 
 
-########## PHOENIX ##########
-## Install nodejs, npm
-#RUN yum install -y nodejs
-#RUN yum install -y npm 
-#
-## Install phoenix
-#EXPOSE ${PHOENIX_APP_PORT}
-#
-#WORKDIR /usr/local/src
-#RUN git clone https://github.com/phoenixframework/phoenix.git
-#WORKDIR /usr/local/src/phoenix/installer
-#RUN mix test
-#RUN mix phoenix.new /usr/local/src/${PHOENIX_APP_NAME}
-#
-## Create phoenix project
-#WORKDIR /usr/local/src/${PHOENIX_APP_NAME}
-#RUN npm install
-#RUN npm install -g brunch
-#RUN brunch build
-#
-## Compile phoenix(FOR dev)
-##RUN yes | mix local.hex && yes | mix local.rebar && mix do deps.get, compile
-## Compile phoenix(FOR prod)
-#RUN yes | mix local.hex && yes | mix local.rebar && mix do deps.get && MIX_ENV=prod mix compile.protocols
-########## PHOENIX ##########
-
 ########## ON BOOT ##########
-# Run Phoenix on Cowboy server(FOR dev)
-#CMD ["/bin/bash", "-c", "mix phoenix.server"]
-# Run Phoenix on Cowboy server(FOR prod)
-#CMD ["/bin/bash", "-c", "MIX_ENV=prod PORT=${PHOENIX_APP_PORT} elixir -pa _build/prod/consolidated -S mix phoenix.server"]
 CMD /usr/local/bin/droned --config=/etc/drone/drone.toml
 ########## ON BOOT ##########
 
